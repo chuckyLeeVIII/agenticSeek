@@ -178,7 +178,14 @@ async def get_latest_answer():
     if interaction.current_agent is None:
         return JSONResponse(status_code=404, content={"error": "No agent available"})
     uid = str(uuid.uuid4())
-    if not any(q["answer"] == interaction.current_agent.last_answer for q in query_resp_history):
+
+    # Performance optimization: Check only the last element instead of scanning the entire history O(N) -> O(1).
+    # This also fixes a bug where valid identical answers were suppressed if they appeared anywhere in the past.
+    is_duplicate = False
+    if query_resp_history:
+        is_duplicate = (query_resp_history[-1]["answer"] == interaction.current_agent.last_answer)
+
+    if not is_duplicate:
         query_resp = {
             "done": "false",
             "answer": interaction.current_agent.last_answer,
