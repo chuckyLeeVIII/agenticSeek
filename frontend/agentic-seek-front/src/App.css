@@ -1010,3 +1010,50 @@ body {
 [data-theme="hacker"] .copy-button:hover {
   background: #003300;
 }
+
+/* Artificially Advanced Dark Theme */
+[data-theme="dark"] {
+  --background: #050505;
+  --foreground: #e0e0e0;
+  --card: rgba(20, 20, 25, 0.7);
+  --muted: rgba(40, 40, 50, 0.5);
+  --border: rgba(60, 100, 255, 0.2);
+  --accent: #0070f3;
+  --accent-foreground: #ffffff;
+}
+
+[data-theme="dark"] .app {
+  background: radial-gradient(circle at top, #0a1120 0%, #000000 100%);
+}
+
+[data-theme="dark"] .chat-section,
+[data-theme="dark"] .computer-section {
+  backdrop-filter: blur(16px);
+  border: 1px solid rgba(60, 100, 255, 0.2);
+  box-shadow: 0 0 30px rgba(0, 0, 0, 0.6), inset 0 0 20px rgba(60, 100, 255, 0.05);
+}
+
+[data-theme="dark"] .message {
+  font-family: "JetBrains Mono", "Fira Code", monospace;
+  font-size: 0.85rem;
+  letter-spacing: -0.2px;
+}
+
+[data-theme="dark"] .agent-message {
+  border-left: 2px solid var(--accent);
+  background: linear-gradient(90deg, rgba(0, 112, 243, 0.05), transparent);
+  border-radius: 4px 12px 12px 4px;
+}
+
+[data-theme="dark"] .user-message {
+  border-right: 2px solid var(--foreground);
+  background: linear-gradient(-90deg, rgba(255, 255, 255, 0.05), transparent);
+  border-radius: 12px 4px 4px 12px;
+  color: var(--foreground);
+}
+
+[data-theme="dark"] .header {
+  border-bottom: 1px solid rgba(60, 100, 255, 0.2);
+  background: rgba(5, 5, 5, 0.8);
+  backdrop-filter: blur(10px);
+}
