@@ -1,10 +1,19 @@
 import React, { useState, useRef, useCallback } from "react";
 import "./ResizableLayout.css";
 
-export const ResizableLayout = ({ children, initialLeftWidth = 50 }) => {
-  const [leftWidth, setLeftWidth] = useState(initialLeftWidth);
+export const ResizableLayout = ({
+  children,
+  initialLeftWidth = 50,
+  leftWidth: controlledLeftWidth,
+  onWidthChange,
+}) => {
+  const [internalLeftWidth, setInternalLeftWidth] = useState(initialLeftWidth);
   const [isDragging, setIsDragging] = useState(false);
   const containerRef = useRef(null);
+
+  const leftWidth =
+    controlledLeftWidth !== undefined ? controlledLeftWidth : internalLeftWidth;
+  const setLeftWidth = onWidthChange || setInternalLeftWidth;
 
   const handleMouseDown = useCallback((e) => {
     e.preventDefault();
