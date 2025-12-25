@@ -20,6 +20,7 @@ function App() {
   const [status, setStatus] = useState("Agents ready");
   const [expandedReasoning, setExpandedReasoning] = useState(new Set());
   const messagesEndRef = useRef(null);
+  const lastProcessedUid = useRef(null);
 
   const fetchLatestAnswer = useCallback(async () => {
     try {
@@ -30,11 +31,10 @@ function App() {
       if (!data.answer || data.answer.trim() === "") {
         return;
       }
-      const normalizedNewAnswer = normalizeAnswer(data.answer);
-      const answerExists = messages.some(
-        (msg) => normalizeAnswer(msg.content) === normalizedNewAnswer
-      );
-      if (!answerExists) {
+
+      // Optimization: Check UID instead of content scanning O(N) -> O(1)
+      if (data.uid && data.uid !== lastProcessedUid.current) {
+        lastProcessedUid.current = data.uid;
         setMessages((prev) => [
           ...prev,
           {
@@ -54,7 +54,7 @@ function App() {
     } catch (error) {
       console.error("Error fetching latest answer:", error);
     }
-  }, [messages]);
+  }, []);
 
   useEffect(() => {
     const intervalId = setInterval(() => {
@@ -105,14 +105,6 @@ function App() {
         screenshotTimestamp: new Date().getTime(),
       }));
     }
-  };
-
-  const normalizeAnswer = (answer) => {
-    return answer
-      .trim()
-      .toLowerCase()
-      .replace(/\s+/g, " ")
-      .replace(/[.,!?]/g, "");
   };
 
   const scrollToBottom = () => {
