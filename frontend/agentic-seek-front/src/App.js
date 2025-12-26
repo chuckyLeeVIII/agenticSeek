@@ -21,62 +21,76 @@ function App() {
   const [expandedReasoning, setExpandedReasoning] = useState(new Set());
   const messagesEndRef = useRef(null);
   const lastProcessedUid = useRef(null);
+  const lastKnownStatus = useRef("Agents ready");
+  const lastKnownAnswerContent = useRef("");
+
+  const updateData = useCallback((data) => {
+    setResponseData((prev) => ({
+      ...prev,
+      blocks: data.blocks || prev?.blocks || null,
+      done: data.done,
+      answer: data.answer,
+      agent_name: data.agent_name,
+      status: data.status,
+      uid: data.uid,
+    }));
+  }, []);
+
+  const scrollToBottom = useCallback(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, []);
 
   const fetchLatestAnswer = useCallback(async () => {
     try {
       const res = await axios.get(`${BACKEND_URL}/latest_answer`);
       const data = res.data;
 
-      updateData(data);
-      if (!data.answer || data.answer.trim() === "") {
-        return;
+      // Optimization: Check UID, status, and content changes using refs to avoid re-renders and stale closures
+      const isNewMessage = data.uid && data.uid !== lastProcessedUid.current;
+      const statusChanged = data.status !== lastKnownStatus.current;
+      const contentChanged = data.answer !== lastKnownAnswerContent.current;
+
+      if (isNewMessage || statusChanged || contentChanged) {
+        updateData(data);
+        setStatus(data.status);
+        lastKnownStatus.current = data.status;
+        lastKnownAnswerContent.current = data.answer || "";
       }
 
-      // Optimization: Check UID instead of content scanning O(N) -> O(1)
-      if (data.uid && data.uid !== lastProcessedUid.current) {
-        lastProcessedUid.current = data.uid;
-        setMessages((prev) => [
-          ...prev,
-          {
-            type: "agent",
-            content: data.answer,
-            reasoning: data.reasoning,
-            agentName: data.agent_name,
-            status: data.status,
-            uid: data.uid,
-          },
-        ]);
-        setStatus(data.status);
-        scrollToBottom();
-      } else {
-        console.log("Duplicate answer detected, skipping:", data.answer);
+      if (isNewMessage) {
+        if (data.answer && data.answer.trim() !== "") {
+          lastProcessedUid.current = data.uid;
+          setMessages((prev) => [
+            ...prev,
+            {
+              type: "agent",
+              content: data.answer,
+              reasoning: data.reasoning,
+              agentName: data.agent_name,
+              status: data.status,
+              uid: data.uid,
+            },
+          ]);
+          scrollToBottom();
+        }
       }
     } catch (error) {
       console.error("Error fetching latest answer:", error);
     }
-  }, []);
+  }, [updateData, scrollToBottom]);
 
-  useEffect(() => {
-    const intervalId = setInterval(() => {
-      checkHealth();
-      fetchLatestAnswer();
-      fetchScreenshot();
-    }, 3000);
-    return () => clearInterval(intervalId);
-  }, [fetchLatestAnswer]);
-
-  const checkHealth = async () => {
+  const checkHealth = useCallback(async () => {
     try {
       await axios.get(`${BACKEND_URL}/health`);
       setIsOnline(true);
-      console.log("System is online");
+      // Removed noisy console.log("System is online");
     } catch {
       setIsOnline(false);
       console.log("System is offline");
     }
-  };
+  }, []);
 
-  const fetchScreenshot = async () => {
+  const fetchScreenshot = useCallback(async () => {
     try {
       const timestamp = new Date().getTime();
       const res = await axios.get(
@@ -105,11 +119,27 @@ function App() {
         screenshotTimestamp: new Date().getTime(),
       }));
     }
-  };
+  }, []);
 
-  const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  };
+  // Poll for health and latest answer (Critical updates)
+  useEffect(() => {
+    const intervalId = setInterval(() => {
+      checkHealth();
+      fetchLatestAnswer();
+    }, 3000);
+    return () => clearInterval(intervalId);
+  }, [checkHealth, fetchLatestAnswer]);
+
+  // Poll for screenshots only when in screenshot view (Performance optimization)
+  useEffect(() => {
+    if (currentView !== 'screenshot') return;
+
+    fetchScreenshot(); // Fetch immediately on switch
+    const intervalId = setInterval(() => {
+      fetchScreenshot();
+    }, 3000);
+    return () => clearInterval(intervalId);
+  }, [currentView, fetchScreenshot]);
 
   const toggleReasoning = (messageIndex) => {
     setExpandedReasoning((prev) => {
@@ -121,18 +151,6 @@ function App() {
       }
       return newSet;
     });
-  };
-
-  const updateData = (data) => {
-    setResponseData((prev) => ({
-      ...prev,
-      blocks: data.blocks || prev.blocks || null,
-      done: data.done,
-      answer: data.answer,
-      agent_name: data.agent_name,
-      status: data.status,
-      uid: data.uid,
-    }));
   };
 
   const handleStop = async (e) => {
@@ -169,6 +187,7 @@ function App() {
       setQuery("Enter your query...");
       console.log("Response:", res.data);
       const data = res.data;
+      // We force update here because this is a direct response to user query
       updateData(data);
     } catch (err) {
       console.error("Error:", err);
