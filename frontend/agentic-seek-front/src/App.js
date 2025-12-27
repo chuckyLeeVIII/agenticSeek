@@ -27,6 +27,12 @@ function App() {
   const { setTheme } = useTheme();
   const messagesEndRef = useRef(null);
   const lastProcessedUid = useRef(null);
+  const currentViewRef = useRef(currentView);
+
+  // Update ref whenever state changes
+  useEffect(() => {
+    currentViewRef.current = currentView;
+  }, [currentView]);
 
   const fetchLatestAnswer = useCallback(async () => {
     try {
@@ -180,6 +186,11 @@ function App() {
   };
 
   const fetchScreenshot = async () => {
+    // Optimization: Only fetch screenshot if we are in the screenshot view
+    if (currentViewRef.current !== "screenshot") {
+      return;
+    }
+
     try {
       const timestamp = new Date().getTime();
       const res = await axios.get(
