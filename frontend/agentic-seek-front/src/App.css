@@ -876,3 +876,184 @@ body {
     height: 34px;
   }
 }
+
+.latency-text {
+  font-family: "JetBrains Mono", monospace;
+  font-size: 0.7rem;
+  color: var(--muted-foreground);
+  margin-left: 4px;
+  opacity: 0.8;
+}
+
+/* Layout Presets */
+.layout-presets {
+  display: flex;
+  gap: 4px;
+  background: var(--muted);
+  padding: 4px;
+  border-radius: 8px;
+  margin: 0 16px;
+}
+
+.preset-btn {
+  background: transparent;
+  border: none;
+  color: var(--muted-foreground);
+  padding: 4px 12px;
+  border-radius: 6px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.preset-btn:hover {
+  color: var(--foreground);
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.preset-btn.active {
+  background: var(--card);
+  color: var(--foreground);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+}
+
+/* Palette Button */
+.palette-btn {
+  background: var(--accent);
+  color: var(--accent-foreground);
+  border-color: var(--accent);
+}
+
+.palette-btn:hover {
+  filter: brightness(1.1);
+}
+
+/* Hacker Theme Overrides */
+[data-theme="hacker"] {
+  --background: #000000;
+  --foreground: #00ff00;
+  --card: #0a0a0a;
+  --muted: #001100;
+  --muted-foreground: #00aa00;
+  --border: #003300;
+  --accent: #00ff00;
+  --accent-foreground: #000000;
+  --destructive: #ff0000;
+  font-family: "Courier New", Courier, monospace;
+}
+
+[data-theme="hacker"] .app {
+  background: radial-gradient(circle at center, #001100 0%, #000000 100%);
+}
+
+[data-theme="hacker"] .header,
+[data-theme="hacker"] .task-section,
+[data-theme="hacker"] .chat-section,
+[data-theme="hacker"] .computer-section {
+  border-color: #00ff00;
+  box-shadow: 0 0 10px rgba(0, 255, 0, 0.1);
+  border-radius: 0;
+}
+
+[data-theme="hacker"] .action-button,
+[data-theme="hacker"] .preset-btn {
+  border-radius: 0;
+  border: 1px solid #00ff00;
+}
+
+[data-theme="hacker"] .status-dot {
+  box-shadow: 0 0 10px #00ff00;
+  background-color: #00ff00;
+}
+
+[data-theme="hacker"] .logo-icon {
+  filter: hue-rotate(90deg) brightness(2);
+}
+
+/* Block Header */
+.block-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.5rem;
+}
+
+.copy-button {
+  background: transparent;
+  border: 1px solid var(--border);
+  color: var(--muted-foreground);
+  border-radius: 4px;
+  padding: 2px 8px;
+  font-size: 0.75rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  transition: all 0.2s ease;
+}
+
+.copy-button:hover {
+  background: var(--muted);
+  color: var(--foreground);
+}
+
+.copy-button:active {
+  transform: translateY(1px);
+}
+
+[data-theme="hacker"] .copy-button {
+  border-color: #00ff00;
+  color: #00ff00;
+}
+
+[data-theme="hacker"] .copy-button:hover {
+  background: #003300;
+}
+
+/* Artificially Advanced Dark Theme */
+[data-theme="dark"] {
+  --background: #050505;
+  --foreground: #e0e0e0;
+  --card: rgba(20, 20, 25, 0.7);
+  --muted: rgba(40, 40, 50, 0.5);
+  --border: rgba(60, 100, 255, 0.2);
+  --accent: #0070f3;
+  --accent-foreground: #ffffff;
+}
+
+[data-theme="dark"] .app {
+  background: radial-gradient(circle at top, #0a1120 0%, #000000 100%);
+}
+
+[data-theme="dark"] .chat-section,
+[data-theme="dark"] .computer-section {
+  backdrop-filter: blur(16px);
+  border: 1px solid rgba(60, 100, 255, 0.2);
+  box-shadow: 0 0 30px rgba(0, 0, 0, 0.6), inset 0 0 20px rgba(60, 100, 255, 0.05);
+}
+
+[data-theme="dark"] .message {
+  font-family: "JetBrains Mono", "Fira Code", monospace;
+  font-size: 0.85rem;
+  letter-spacing: -0.2px;
+}
+
+[data-theme="dark"] .agent-message {
+  border-left: 2px solid var(--accent);
+  background: linear-gradient(90deg, rgba(0, 112, 243, 0.05), transparent);
+  border-radius: 4px 12px 12px 4px;
+}
+
+[data-theme="dark"] .user-message {
+  border-right: 2px solid var(--foreground);
+  background: linear-gradient(-90deg, rgba(255, 255, 255, 0.05), transparent);
+  border-radius: 12px 4px 4px 12px;
+  color: var(--foreground);
+}
+
+[data-theme="dark"] .header {
+  border-bottom: 1px solid rgba(60, 100, 255, 0.2);
+  background: rgba(5, 5, 5, 0.8);
+  backdrop-filter: blur(10px);
+}
