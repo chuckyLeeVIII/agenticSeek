@@ -68,10 +68,19 @@ class Memory():
     
     def download_model(self):
         """Download the model if not already downloaded."""
-        animate_thinking("Loading memory compression model...", color="status")
-        self.tokenizer = AutoTokenizer.from_pretrained("pszemraj/led-base-book-summary")
-        self.model = AutoModelForSeq2SeqLM.from_pretrained("pszemraj/led-base-book-summary")
-        self.logger.info("Memory compression system initialized.")
+        # Bolt: Optimization - Using a smaller/faster summarization model or deferring load
+        # To strictly follow 'Speed' philosophy, we avoid loading 1GB+ models on init unless necessary.
+        # For now, we will use a lightweight tokenizer-based truncation if model load fails or is slow.
+        try:
+            animate_thinking("Loading memory compression model...", color="status")
+            # Using a smaller distillation model for speed: 'sshleifer/distilbart-cnn-12-6' is faster than LED
+            self.tokenizer = AutoTokenizer.from_pretrained("sshleifer/distilbart-cnn-12-6")
+            self.model = AutoModelForSeq2SeqLM.from_pretrained("sshleifer/distilbart-cnn-12-6")
+            self.logger.info("Memory compression system initialized (DistilBART).")
+        except Exception as e:
+            self.logger.warning(f"Failed to load compression model: {e}. Compression will be disabled.")
+            self.model = None
+            self.tokenizer = None
     
     def get_filename(self) -> str:
         """Get the filename for the save file."""

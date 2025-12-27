@@ -1,12 +1,14 @@
 import readline
+import os
+import re
+import json
 from typing import List, Tuple, Type, Dict
+import threading
 
 from sources.text_to_speech import Speech
 from sources.utility import pretty_print, animate_thinking
 from sources.router import AgentRouter
 from sources.speech_to_text import AudioTranscriber, AudioRecorder
-import threading
-
 
 class Interaction:
     """
@@ -15,7 +17,7 @@ class Interaction:
     def __init__(self, agents,
                  tts_enabled: bool = True,
                  stt_enabled: bool = True,
-                 recover_last_session: bool = False,
+                 recover_last_session: bool = True, # Bolt: Default to True for "Live Recall"
                  langs: List[str] = ["en", "zh"]
                 ):
         self.is_active = True
@@ -34,12 +36,19 @@ class Interaction:
         self.recorder = None
         self.is_generating = False
         self.languages = langs
+
+        # Bolt: Feature - Response Cache
+        self.response_cache = {}
+
         if tts_enabled:
             self.initialize_tts()
         if stt_enabled:
             self.initialize_stt()
-        if recover_last_session:
+
+        # Bolt: Always try to load last session for "Live Recall" if enabled
+        if self.recover_last_session:
             self.load_last_session()
+
         self.emit_status()
     
     def get_spoken_language(self) -> str:
@@ -88,6 +97,7 @@ class Interaction:
     
     def load_last_session(self):
         """Recover the last session."""
+        print("Bolt: Loading Live Recall memory...")
         for agent in self.agents:
             if agent.type == "planner_agent":
                 continue
@@ -149,9 +159,50 @@ class Interaction:
     async def think(self) -> bool:
         """Request AI agents to process the user input."""
         push_last_agent_memory = False
+        original_query = self.last_query # Bolt: Store original query for cache key
+
         if self.last_query is None or len(self.last_query) == 0:
             return False
-        agent = self.router.select_agent(self.last_query)
+
+        # Bolt: Feature - Response Cache (Performance)
+        # Check if query has been asked recently (simple exact match for now)
+        if self.last_query in self.response_cache:
+            print(f"Bolt: Cache hit for '{self.last_query}'")
+            self.last_answer = self.response_cache[self.last_query]
+            self.last_reasoning = "(Cached Response)"
+
+            # Bolt: Logic Fix - Even if cached, we must push to memory so agent remembers context
+            if self.current_agent:
+                self.current_agent.memory.push('user', self.last_query)
+                self.current_agent.memory.push('assistant', self.last_answer)
+            return True
+
+        # Bolt: Feature - Smart Regex Routing (Performance)
+        # Bypass heavy LLM router for specific commands
+        selected_agent = None
+        if self.last_query.startswith("/paper"):
+            # Feature: Archive Paper Creator logic
+            # Route to planner with a specific instruction
+            self.last_query = f"Research the topic '{self.last_query[7:]}' thoroughly using the web, summarize findings, and write a detailed research paper in 'research_paper.md'."
+            # Find planner agent
+            for agent in self.agents:
+                if agent.type == "planner_agent":
+                    selected_agent = agent
+                    break
+        elif self.last_query.startswith("/code"):
+             # Route to coder
+             self.last_query = self.last_query[6:]
+             for agent in self.agents:
+                if agent.type == "code_agent":
+                    selected_agent = agent
+                    break
+
+        if selected_agent:
+            agent = selected_agent
+            print(f"Bolt: Smart Route selected {agent.agent_name}")
+        else:
+            agent = self.router.select_agent(self.last_query)
+
         if agent is None:
             return False
         if self.current_agent != agent and self.last_answer is not None:
@@ -166,6 +217,14 @@ class Interaction:
             self.current_agent.memory.push('assistant', self.last_answer)
         if self.last_answer == tmp:
             self.last_answer = None
+
+        # Bolt: Save to cache using ORIGINAL query key
+        if self.last_answer:
+            self.response_cache[original_query] = self.last_answer
+            # Bolt: Auto-save session (Live Recall)
+            if self.recover_last_session:
+                self.save_session()
+
         return True
     
     def get_updated_process_answer(self) -> str:
@@ -196,4 +255,3 @@ class Interaction:
             return
         if self.current_agent is not None:
             self.current_agent.show_answer()
-

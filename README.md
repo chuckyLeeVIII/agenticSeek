@@ -14,6 +14,8 @@
 
 * 🔒 Fully Local & Private - Everything runs on your machine — no cloud, no data sharing. Your files, conversations, and searches stay private.
 
+* ⚡ **Performance & Speed** - Optimized for efficiency with smart context compression and instant response caching.
+
 * 🌐 Smart Web Browsing - AgenticSeek can browse the internet by itself — search, read, extract info, fill web form — all hands-free.
 
 * 💻 Autonomous Coding Assistant - Need code? It can write, debug, and run programs in Python, C, Go, Java, and more — all without supervision.
@@ -23,6 +25,8 @@
 * 📋 Plans & Executes Complex Tasks - From trip planning to complex projects — it can split big tasks into steps and get things done using multiple AI agents.
 
 * 🎙️ Voice-Enabled - Clean, fast, futuristic voice and speech to text allowing you to talk to it like it's your personal AI from a sci-fi movie. (In progress)
+
+* 🔄 **Live Recall** - AgenticSeek remembers your previous sessions automatically, allowing you to pick up exactly where you left off.
 
 ### **Demo**
 
@@ -46,70 +50,73 @@ Before you begin, ensure you have the following software installed:
     *   Install Docker Desktop (which includes Docker Compose V2): [Windows](https://docs.docker.com/desktop/install/windows-install/) | [Mac](https://docs.docker.com/desktop/install/mac-install/) | [Linux](https://docs.docker.com/desktop/install/linux-install/)
     *   Alternatively, install Docker Engine and Docker Compose separately on Linux: [Docker Engine](https://docs.docker.com/engine/install/) | [Docker Compose](https://docs.docker.com/compose/install/) (ensure you install Compose V2, e.g., `sudo apt-get install docker-compose-plugin`).
 
-### 1. **Clone the repository and setup**
+## One-Click Installation
+
+We provide simple scripts to set up the environment, install dependencies (Python, Node.js, System), and configure the application automatically.
+
+### 1. **Clone the repository**
 
 ```sh
 git clone https://github.com/Fosowl/agenticSeek.git
 cd agenticSeek
-mv .env.example .env
 ```
 
-### 2. Change the .env file content
+### 2. **Run the Setup Script**
+
+**On Linux / macOS:**
+```sh
+chmod +x setup.sh
+./setup.sh
+```
+
+**On Windows:**
+```cmd
+setup.bat
+```
+
+This will:
+- Check and install system dependencies (PortAudio, etc.).
+- Set up a Python virtual environment with `uv`.
+- Install frontend dependencies (`npm install`).
+- Create a `.env` file from the example.
+- Download necessary models (if applicable).
+
+### 3. **Change the .env file content** (Optional)
+
+Check the generated `.env` file and update paths or keys if necessary.
 
 ```sh
-SEARXNG_BASE_URL="http://searxng:8080" # http://127.0.0.1:8080 if running on host
-REDIS_BASE_URL="redis://redis:6379/0"
-WORK_DIR="/Users/mlg/Documents/workspace_for_ai"
-OLLAMA_PORT="11434"
-LM_STUDIO_PORT="1234"
-CUSTOM_ADDITIONAL_LLM_PORT="11435"
-OPENAI_API_KEY='optional'
-DEEPSEEK_API_KEY='optional'
-OPENROUTER_API_KEY='optional'
-TOGETHER_API_KEY='optional'
-GOOGLE_API_KEY='optional'
-ANTHROPIC_API_KEY='optional'
+WORK_DIR="/path/to/your/workspace"
 ```
 
+**API Key are totally optional for user who choose to run LLM locally.**
 
-Update the `.env` file with your own values as needed:
+### 4. **Start Docker**
 
-- **SEARXNG_BASE_URL**: Leave unchanged unless running on host with CLI mode.
-- **REDIS_BASE_URL**: Leave unchanged 
-- **WORK_DIR**: Path to your working directory on your local machine. AgenticSeek will be able to read and interact with these files.
-- **OLLAMA_PORT**: Port number for the Ollama service.
-- **LM_STUDIO_PORT**: Port number for the LM Studio service.
-- **CUSTOM_ADDITIONAL_LLM_PORT**: Port for any additional custom LLM service.
-
-**API Key are totally optional for user who choose to run LLM locally. Which is the primary purpose of this project. Leave empty if you have sufficient hardware**
-
-### 3. **Start Docker**
-
-Make sure Docker is installed and running on your system. You can start Docker using the following commands:
-
-- **On Linux/macOS:**  
-    Open a terminal and run:
-    ```sh
-    sudo systemctl start docker
-    ```
-    Or launch Docker Desktop from your applications menu if installed.
-
-- **On Windows:**  
-    Start Docker Desktop from the Start menu.
-
-You can verify Docker is running by executing:
-```sh
-docker info
-```
-If you see information about your Docker installation, it is running correctly.
+Make sure Docker is installed and running on your system.
 
 See the table of [Local Providers](#list-of-local-providers) below for a summary.
 
 Next step: [Run AgenticSeek locally](#start-services-and-run)
 
-*See the [Troubleshooting](#troubleshooting) section if you are having issues.*
-*If your hardware can't run LLMs locally, see [Setup to run with an API](#setup-to-run-with-an-api).*
-*For detailed `config.ini` explanations, see [Config Section](#config).*
+---
+
+## New Features
+
+### **Live Recall**
+AgenticSeek now automatically saves your session history. When you restart the application, it will remember previous conversations and context, so you don't have to re-explain yourself. This is enabled by default.
+
+### **Archive Paper Creator**
+Use the command `/paper <topic>` to instantly trigger a deep research task. The agent will browse the web, aggregate information, and write a detailed research paper in Markdown format.
+> Example: `/paper Quantum Computing Advances 2025`
+
+### **OpenInterpreter Mode**
+Use the command `/code <instruction>` to bypass the planner and directly invoke the Code Agent to write and execute code.
+> Example: `/code Write a Python script to calculate Fibonacci sequence`
+
+### **Performance Optimizations**
+- **Context Compression:** Uses a lightweight AI model to summarize long conversations, keeping the context relevant without exceeding token limits.
+- **Response Caching:** Instant answers for questions you've already asked in the current session.
 
 ---
 
@@ -279,11 +286,11 @@ Go to `http://localhost:3000/` and you should see the web interface.
 
 **Option 2:** CLI mode:
 
-To run with CLI interface you would have to install package on host:
+To run with CLI interface you would have to install package on host. Use the one-click setup:
 
 ```sh
-./install.sh
-./install.bat # windows
+./setup.sh
+setup.bat # windows
 ```
 
 Then you must change the SEARXNG_BASE_URL in `config.ini` to:
@@ -698,4 +705,4 @@ See [Contributing.md](./docs/CONTRIBUTING.md) to learn how to integrate custom t
 
  > [tcsenpai](https://github.com/tcsenpai) and [plitc](https://github.com/plitc) For helping with backend dockerization
 
-[![Star History Chart](https://api.star-history.com/svg?repos=Fosowl/agenticSeek&type=Date)](https://www.star-history.com/#Fosowl/agenticSeek&Date)
+[![Star History Chart](https://api.star-history.com/svg?repos=Fosowl/agenticSeek&type=Date)](https://www.star-history.com/#Fosowl/agenticSeek&type=Date)
