@@ -279,7 +279,7 @@ Start required services. This will start all services from the docker-compose.ym
     - backend (if using `full` when using the web interface)
 
 ```sh
-./start_services.sh full # MacOS
+./start_services.sh # MacOS (Defaults to full)
 start start_services.cmd full # Window
 ```
 
@@ -323,7 +323,7 @@ Use the CLI: `uv run cli.py`
 
 ## Usage
 
-Make sure the services are up and running with `./start_services.sh full` and go to `localhost:3000` for web interface.
+Make sure the services are up and running with `./start_services.sh` and go to `localhost:3000` for web interface.
 
 You can also use speech to text by setting `listen = True` in the config. Only for CLI mode.
 

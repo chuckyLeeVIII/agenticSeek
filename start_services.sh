@@ -25,10 +25,12 @@ if [ "$dir_size_bytes" -gt "$max_size_bytes" ]; then
     exit 1
 fi
 
-if [ "$1" = "full" ]; then
-    echo "Starting full deployment with backend and all services..."
+if [ "$1" = "core" ]; then
+    echo "Starting core deployment with frontend and search services only..."
 else
-    echo "Starting core deployment with frontend and search services only... use ./start_services.sh full to start backend as well"
+    echo "Starting full deployment with backend and all services... (Default)"
+    # Default to full mode if not specified
+    set -- "full"
 fi
 
 if ! command_exists docker; then
