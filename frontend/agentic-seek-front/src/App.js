@@ -4,6 +4,8 @@ import axios from "axios";
 import "./App.css";
 import { ThemeToggle } from "./components/ThemeToggle";
 import { ResizableLayout } from "./components/ResizableLayout";
+import { CommandPalette } from "./components/CommandPalette";
+import { useTheme } from "./contexts/ThemeContext";
 import faviconPng from "./logo.png";
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
@@ -17,24 +19,31 @@ function App() {
   const [currentView, setCurrentView] = useState("blocks");
   const [responseData, setResponseData] = useState(null);
   const [isOnline, setIsOnline] = useState(false);
+  const [latency, setLatency] = useState(null);
   const [status, setStatus] = useState("Agents ready");
   const [expandedReasoning, setExpandedReasoning] = useState(new Set());
+  const [isPaletteOpen, setIsPaletteOpen] = useState(false);
+  const [layoutWidth, setLayoutWidth] = useState(50);
+  const { setTheme } = useTheme();
   const messagesEndRef = useRef(null);
+  const lastProcessedUid = useRef(null);
 
   const fetchLatestAnswer = useCallback(async () => {
     try {
+      const start = performance.now();
       const res = await axios.get(`${BACKEND_URL}/latest_answer`);
+      const end = performance.now();
+      setLatency(Math.round(end - start));
       const data = res.data;
 
       updateData(data);
       if (!data.answer || data.answer.trim() === "") {
         return;
       }
-      const normalizedNewAnswer = normalizeAnswer(data.answer);
-      const answerExists = messages.some(
-        (msg) => normalizeAnswer(msg.content) === normalizedNewAnswer
-      );
-      if (!answerExists) {
+
+      // Optimization: Check UID instead of content scanning O(N) -> O(1)
+      if (data.uid && data.uid !== lastProcessedUid.current) {
+        lastProcessedUid.current = data.uid;
         setMessages((prev) => [
           ...prev,
           {
@@ -54,7 +63,7 @@ function App() {
     } catch (error) {
       console.error("Error fetching latest answer:", error);
     }
-  }, [messages]);
+  }, []);
 
   useEffect(() => {
     const intervalId = setInterval(() => {
@@ -65,15 +74,109 @@ function App() {
     return () => clearInterval(intervalId);
   }, [fetchLatestAnswer]);
 
+  const commands = [
+    {
+      id: "clear",
+      label: "Clear Chat History",
+      action: () => clearChat(),
+      icon: "🗑️",
+    },
+    {
+      id: "export",
+      label: "Export Conversation",
+      action: () => exportChat(),
+      icon: "📥",
+    },
+    {
+      id: "theme-light",
+      label: "Theme: Light Mode",
+      action: () => setTheme("light"),
+      icon: "☀️",
+    },
+    {
+      id: "theme-dark",
+      label: "Theme: Dark Mode",
+      action: () => setTheme("dark"),
+      icon: "🌙",
+    },
+    {
+      id: "theme-hacker",
+      label: "Theme: Hacker Mode",
+      action: () => setTheme("hacker"),
+      icon: "👨‍💻",
+    },
+    {
+      id: "layout-chat",
+      label: "Layout: Focus Chat (70/30)",
+      action: () => setLayoutWidth(70),
+      icon: "💬",
+    },
+    {
+      id: "layout-code",
+      label: "Layout: Focus Code (30/70)",
+      action: () => setLayoutWidth(30),
+      icon: "🖥️",
+    },
+    {
+      id: "layout-balanced",
+      label: "Layout: Balanced (50/50)",
+      action: () => setLayoutWidth(50),
+      icon: "⚖️",
+    },
+  ];
+
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if ((e.ctrlKey || e.metaKey) && e.key === "k") {
+        e.preventDefault();
+        setIsPaletteOpen((prev) => !prev);
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, []);
+
   const checkHealth = async () => {
     try {
+      const start = performance.now();
       await axios.get(`${BACKEND_URL}/health`);
+      const end = performance.now();
+      setLatency(Math.round(end - start));
       setIsOnline(true);
       console.log("System is online");
     } catch {
       setIsOnline(false);
+      setLatency(null);
       console.log("System is offline");
     }
+  };
+
+  const clearChat = () => {
+    if (window.confirm("Are you sure you want to clear the chat history?")) {
+      setMessages([]);
+      setExpandedReasoning(new Set());
+    }
+  };
+
+  const exportChat = () => {
+    const chatContent = messages
+      .map((msg) => {
+        const role = msg.type === "user" ? "User" : msg.agentName || "Agent";
+        return `### ${role}\n${msg.content}\n${
+          msg.reasoning ? `> **Reasoning:** ${msg.reasoning}\n` : ""
+        }\n---\n`;
+      })
+      .join("\n");
+
+    const blob = new Blob([chatContent], { type: "text/markdown" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `agentic-seek-chat-${new Date().toISOString()}.md`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
   };
 
   const fetchScreenshot = async () => {
@@ -105,14 +208,6 @@ function App() {
         screenshotTimestamp: new Date().getTime(),
       }));
     }
-  };
-
-  const normalizeAnswer = (answer) => {
-    return answer
-      .trim()
-      .toLowerCase()
-      .replace(/\s+/g, " ")
-      .replace(/[.,!?]/g, "");
   };
 
   const scrollToBottom = () => {
@@ -202,6 +297,11 @@ function App() {
 
   return (
     <div className="app">
+      <CommandPalette
+        isOpen={isPaletteOpen}
+        onClose={() => setIsPaletteOpen(false)}
+        commands={commands}
+      />
       <header className="header">
         <div className="header-brand">
           <div className="logo-container">
@@ -219,9 +319,68 @@ function App() {
             <span className="status-text">
               {isOnline ? "Online" : "Offline"}
             </span>
+            {latency !== null && (
+              <span className="latency-text">
+                {latency}ms
+              </span>
+            )}
           </div>
         </div>
+        <div className="layout-presets">
+          <button
+            onClick={() => setLayoutWidth(70)}
+            className={`preset-btn ${layoutWidth === 70 ? "active" : ""}`}
+            title="Focus Chat"
+          >
+            Chat
+          </button>
+          <button
+            onClick={() => setLayoutWidth(50)}
+            className={`preset-btn ${layoutWidth === 50 ? "active" : ""}`}
+            title="Balanced"
+          >
+            50/50
+          </button>
+          <button
+            onClick={() => setLayoutWidth(30)}
+            className={`preset-btn ${layoutWidth === 30 ? "active" : ""}`}
+            title="Focus Code"
+          >
+            Code
+          </button>
+        </div>
+
         <div className="header-actions">
+          <button
+            onClick={() => setIsPaletteOpen(true)}
+            className="action-button palette-btn"
+            title="Command Palette (Ctrl+K)"
+          >
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <path d="M4 6h16M4 12h16m-7 6h7" strokeLinecap="round" strokeLinejoin="round"/>
+            </svg>
+            <span className="action-text">Cmds</span>
+          </button>
+          <button
+            onClick={clearChat}
+            className="action-button"
+            title="Clear Chat"
+            aria-label="Clear Chat"
+          >
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <path d="M3 6h18M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2M10 11v6M14 11v6" strokeLinecap="round" strokeLinejoin="round"/>
+            </svg>
+          </button>
+          <button
+            onClick={exportChat}
+            className="action-button"
+            title="Export Chat"
+            aria-label="Export Chat"
+          >
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3" strokeLinecap="round" strokeLinejoin="round"/>
+            </svg>
+          </button>
           <a
             href="https://github.com/Fosowl/agenticSeek"
             target="_blank"
@@ -240,7 +399,10 @@ function App() {
         </div>
       </header>
       <main className="main">
-        <ResizableLayout initialLeftWidth={50}>
+        <ResizableLayout
+          leftWidth={layoutWidth}
+          onWidthChange={setLayoutWidth}
+        >
           <div className="chat-section">
             <h2>Chat Interface</h2>
             <div className="messages">
@@ -374,7 +536,21 @@ function App() {
                   Object.values(responseData.blocks).length > 0 ? (
                     Object.values(responseData.blocks).map((block, index) => (
                       <div key={index} className="block">
-                        <p className="block-tool">Tool: {block.tool_type}</p>
+                        <div className="block-header">
+                          <p className="block-tool">Tool: {block.tool_type}</p>
+                          <button
+                            className="copy-button"
+                            onClick={() => {
+                              navigator.clipboard.writeText(block.block);
+                            }}
+                            title="Copy Code"
+                          >
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                              <path d="M8 4H6a2 2 0 00-2 2v14a2 2 0 002 2h12a2 2 0 002-2v-2M16 4h2a2 2 0 012 2v4M21 14H16m-5 5v-5m0 0h5m-5 0V9a2 2 0 012-2h1" strokeLinecap="round" strokeLinejoin="round"/>
+                            </svg>
+                            Copy
+                          </button>
+                        </div>
                         <pre>{block.block}</pre>
                         <p className="block-feedback">
                           Feedback: {block.feedback}

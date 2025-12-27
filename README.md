@@ -24,6 +24,18 @@
 
 * 🎙️ Voice-Enabled - Clean, fast, futuristic voice and speech to text allowing you to talk to it like it's your personal AI from a sci-fi movie. (In progress)
 
+### ⚡ Performance & UI Enhancements (Bolt Update)
+
+This branch includes significant improvements for speed, usability, and aesthetics:
+
+*   **🚀 UID-Based Polling:** Optimized the frontend-backend communication to check for unique message IDs (O(1)) instead of scanning content (O(N)), reducing CPU usage and re-renders.
+*   **⌨️ Command Palette:** Press `Ctrl+K` to open the new Command Palette. Quickly switch themes, change layouts, clear chat, or export conversations without leaving your keyboard.
+*   **🎨 Advanced Themes:**
+    *   **Hacker Mode:** A terminal-inspired green-on-black theme for the true cyber-agent experience.
+    *   **Advanced Dark Mode:** The default dark theme now features glassmorphism, tech-inspired borders, and improved typography.
+*   **🖼️ Smart Layouts:** Toggle between "Focus Chat", "Balanced", and "Focus Code" layouts instantly with new header buttons.
+*   **📋 Code Copying:** All code blocks now come with a one-click "Copy" button.
+
 ### **Demo**
 
 > *Can you search for the agenticSeek project, learn what skills are required, then open the CV_candidates.zip and then tell me which match best the project*

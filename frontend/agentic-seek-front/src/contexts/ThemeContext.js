@@ -3,23 +3,39 @@ import React, { createContext, useContext, useState, useEffect } from "react";
 const ThemeContext = createContext();
 
 export const ThemeProvider = ({ children }) => {
-  const [isDark, setIsDark] = useState(() => {
+  const [theme, setTheme] = useState(() => {
     const saved = localStorage.getItem("theme");
-    return saved ? saved === "dark" : true; // Default to dark
+    // Handle migration from boolean logic or old values
+    if (saved === "true" || saved === "dark") return "dark";
+    if (saved === "false" || saved === "light") return "light";
+    if (saved === "hacker") return "hacker";
+    return "dark"; // Default
   });
 
   useEffect(() => {
-    localStorage.setItem("theme", isDark ? "dark" : "light");
-    document.documentElement.setAttribute(
-      "data-theme",
-      isDark ? "dark" : "light"
-    );
-  }, [isDark]);
+    localStorage.setItem("theme", theme);
+    document.documentElement.setAttribute("data-theme", theme);
+  }, [theme]);
 
-  const toggleTheme = () => setIsDark(!isDark);
+  const toggleTheme = () => {
+    setTheme((prev) => (prev === "light" ? "dark" : "light"));
+  };
+
+  const setSpecificTheme = (newTheme) => {
+    if (["light", "dark", "hacker"].includes(newTheme)) {
+      setTheme(newTheme);
+    }
+  };
 
   return (
-    <ThemeContext.Provider value={{ isDark, toggleTheme }}>
+    <ThemeContext.Provider
+      value={{
+        theme,
+        isDark: theme === "dark" || theme === "hacker",
+        toggleTheme,
+        setTheme: setSpecificTheme,
+      }}
+    >
       {children}
     </ThemeContext.Provider>
   );
